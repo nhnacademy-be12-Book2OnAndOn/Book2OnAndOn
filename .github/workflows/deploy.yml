@@ -43,6 +43,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
+            chmod +x deploy.generic.sh
             SERVICE_NAME="GATEWAY-SERVICE"
             JAR_NAME="Book2OnAndOn-Gateway-0.0.1-SNAPSHOT.jar"
             PORT1=10423
