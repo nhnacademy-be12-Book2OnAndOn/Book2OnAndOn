@@ -1,0 +1,52 @@
+name: CI/CD Pipeline for Gateway
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Build
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package
+
+      - name: SCP JAR
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "target/Book2OnAndOn-Gateway-0.0.1-SNAPSHOT.jar"
+          target: "/home/backend/be12-team2"
+          strip_components: 1
+
+      - name: Execute Deploy Script
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            SERVICE_NAME="GATEWAY-SERVICE"
+            JAR_NAME="Book2OnAndOn-Gateway-0.0.1-SNAPSHOT.jar"
+            PORT1=10423
+            PORT2=10424
+            
+            cd /home/backend/be12-team2
+            ./deploy-generic.sh $SERVICE_NAME $JAR_NAME $PORT1 $PORT2
