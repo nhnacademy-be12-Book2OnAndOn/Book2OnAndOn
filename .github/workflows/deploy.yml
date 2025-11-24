@@ -1,41 +1,44 @@
-name: CI/CD Pipeline for Gateway
+name: CI/CD for Front Service (Docker)
 
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'maven'
 
-      - name: Build
+      - name: Build with Maven
         run: |
           chmod +x mvnw
-          ./mvnw clean package
+          ./mvnw clean package -DskipTests
 
-      - name: SCP JAR
-        uses: appleboy/scp-action@master
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "target/Book2OnAndOn-Gateway-0.0.1-SNAPSHOT.jar"
-          target: "/home/backend/be12-team2"
-          strip_components: 1
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Execute Deploy Script
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: onyune/gateway-server:v1  # docker-compose.yml에 적은 태그와 똑같이!
+
+      # 학교 서버에 접속해서 도커 컨테이너 재실행
+      - name: Deploy to School Server via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -43,11 +46,19 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            chmod +x deploy.generic.sh
-            SERVICE_NAME="GATEWAY-SERVICE"
-            JAR_NAME="Book2OnAndOn-Gateway-0.0.1-SNAPSHOT.jar"
-            PORT1=10423
-            PORT2=10424
-            
             cd /home/backend/be12-team2
-            ./deploy-generic.sh $SERVICE_NAME $JAR_NAME $PORT1 $PORT2
+            
+            echo "1. Pulling New Images"
+            docker compose pull gateway-1 gateway-2
+            
+            echo "2. Restarting Containers"
+            # 무중단 배포 흉내 (순차 재시작)
+            docker compose up -d gateway-1
+            
+            echo "Wait for front-1 to boot..."
+            sleep 15  # 1호기가 켜질 시간 벌어주기
+            
+            docker compose up -d gateway-2
+            
+            echo "3. Cleaning up old images"
+            docker image prune -f
