@@ -53,9 +53,7 @@ jobs:
             EUREKA_URL="http://admin:admin1234@localhost:10437/eureka"
 
             docker compose pull $CONTAINER_1 $CONTAINER_2
-
             INSTANCE_ID="$SERVICE_NAME:$CONTAINER_1"
-            
             curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=OUT_OF_SERVICE" || true
             
             sleep 35
@@ -64,24 +62,18 @@ jobs:
      
             sleep 40 
             
-            
-            
-            
-            
             curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=UP" || true
 
-            
-            INSTANCE_ID_2="$SERVICE_NAME:$CONTAINER_2"
 
-            
+
+
+
+            INSTANCE_ID_2="$SERVICE_NAME:$CONTAINER_2"
             curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=OUT_OF_SERVICE" || true
-            
             sleep 35
             
             docker compose up -d $CONTAINER_2
-            
             sleep 40
-            
             curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=UP" || true
 
             docker image prune -f
