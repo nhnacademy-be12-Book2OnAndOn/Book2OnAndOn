@@ -13,7 +13,7 @@ public class RouteLocatorConfig {
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
-        return builder.routes() //예시일뿐 수정해야함
+        return builder.routes()
                 //BookService
                 .route("book-service-route",
                         r -> r.path("/api/books/**", "/api/admin/books/**")

@@ -37,7 +37,6 @@ jobs:
           push: true
           tags: onyune/gateway-server:v1  # docker-compose.yml에 적은 태그와 똑같이!
 
-      # 학교 서버에 접속해서 도커 컨테이너 재실행
       - name: Deploy to School Server via SSH
         uses: appleboy/ssh-action@master
         with:
@@ -48,17 +47,33 @@ jobs:
           script: |
             cd /home/backend/be12-team2
             
-            echo "1. Pulling New Images"
-            docker compose pull gateway-1 gateway-2
+            SERVICE_NAME="GATEWAY-SERVICE"
+            CONTAINER_1="gateway-1"
+            CONTAINER_2="gateway-2"
+            EUREKA_URL="http://admin:admin1234@localhost:10437/eureka"
+
+            docker compose pull $CONTAINER_1 $CONTAINER_2
+            INSTANCE_ID="$SERVICE_NAME:$CONTAINER_1"
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=OUT_OF_SERVICE" || true
             
-            echo "2. Restarting Containers"
-            # 무중단 배포 흉내 (순차 재시작)
-            docker compose up -d gateway-1
+            sleep 35
             
-            echo "Wait for front-1 to boot..."
-            sleep 15  # 1호기가 켜질 시간 벌어주기
+            docker compose up -d $CONTAINER_1
+     
+            sleep 40 
             
-            docker compose up -d gateway-2
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=UP" || true
+
+
+
+
+
+            INSTANCE_ID_2="$SERVICE_NAME:$CONTAINER_2"
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=OUT_OF_SERVICE" || true
+            sleep 35
             
-            echo "3. Cleaning up old images"
+            docker compose up -d $CONTAINER_2
+            sleep 40
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=UP" || true
+
             docker image prune -f
