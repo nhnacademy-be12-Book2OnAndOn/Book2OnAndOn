@@ -39,24 +39,29 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
                 return chain.filter(exchange);
             }
 
+            // 헤더 존재 여부 확인
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                return onError(exchange, "No Authorization header", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "인증 헤더가 없습니다.", HttpStatus.UNAUTHORIZED);
             }
 
+            // Bearer 형식 확인 (Bearer: "토큰을 지니고 있는 인증된 사용자"라는 의미의 토큰)
             String authorizationHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
             if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-                return onError(exchange, "Invalid Authorization header format", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "인증 헤더 형식이 올바르지 않습니다.", HttpStatus.UNAUTHORIZED);
             }
+
+            // 토큰 추출
             String token = authorizationHeader.substring(7);
 
+            //토큰 유효성 검증 (위변조, 만료 등)
             if (!jwtTokenProvider.validateToken(token)) {
-                return onError(exchange, "Invalid or Expired JWT Token", HttpStatus.UNAUTHORIZED);
+                return onError(exchange, "유효하지 않거나 만료된 토큰입니다.", HttpStatus.UNAUTHORIZED);
             }
-
             String userId = jwtTokenProvider.getUserId(token);
             String userRole = jwtTokenProvider.getRole(token);
 
 
+            // 권한검사
             if (config.getRole() != null) {
 
                 boolean isMatched = config.getRole().equals(userRole);
@@ -69,6 +74,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
                 }
             }
 
+            // 헤더를 추가해서 전달
             ServerHttpRequest newRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", userRole)
@@ -81,6 +87,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
 
     private boolean isWhitelisted(String path) {
         return path.startsWith("/auth") ||
+                path.startsWith("/api/auth") ||
                 path.contains("/swagger-ui") ||
                 path.contains("/v3/api-docs");
     }

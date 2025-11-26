@@ -1,5 +1,7 @@
 package com.nhnacademy.book2onandongateway.config;
 
+import com.nhnacademy.book2onandongateway.filter.AuthorizationHeaderFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -9,10 +11,13 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 @Configuration
+@RequiredArgsConstructor
 public class RouteLocatorConfig {
+    private final AuthorizationHeaderFilter authFilter;
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
+
         return builder.routes() //예시일뿐 수정해야함
                 //BookService
                 .route("book-service-route",
@@ -25,10 +30,25 @@ public class RouteLocatorConfig {
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-SERVICE"))
                 //UserService
-                .route("user-service-route",
-                        r-> r.path("/api/users/**", "/api/admin/users/**")
-                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
-                                .uri("lb://USER-SERVICE"))
+                .route("user-service-auth", r -> r.path("/api/auth/**")
+                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
+                        .uri("lb://USER-SERVICE"))
+
+                .route("user-service-user", r -> r.path("/api/users/**", "/api/grades/**")
+                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                // Config를 빈 상태로 넘기면 토큰 유효성만 검사해서 로그인 여부 확인
+                                .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
+                        .uri("lb://USER-SERVICE"))
+
+                .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**")
+                        .filters(f -> {
+                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                            config.setRole("ROLE_MEMBER_ADMIN"); //회원 관리자만 통과하도록 
+
+                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                    .filter(authFilter.apply(config));
+                        })
+                        .uri("lb://USER-SERVICE"))
                 //CouponService
                 .route("coupon-service-route",
                         r-> r.path("/api/coupons/**", "/api/admin/coupons/**")
