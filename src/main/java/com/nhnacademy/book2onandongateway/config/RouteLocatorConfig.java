@@ -30,10 +30,15 @@ public class RouteLocatorConfig {
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-SERVICE"))
                 //UserService
+                // 접근 권한(전부)
                 .route("user-service-auth", r -> r.path("/api/auth/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                         .uri("lb://USER-SERVICE"))
+                .route("user-service-public-reviews", r -> r.path("/api/users/*/reviews")
+                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")) // 필터 없이 Pass!
+                        .uri("lb://USER-SERVICE"))
 
+                // 권한 검사
                 .route("user-service-user", r -> r.path("/api/users/**", "/api/grades/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 // Config를 빈 상태로 넘기면 토큰 유효성만 검사해서 로그인 여부 확인
@@ -49,6 +54,7 @@ public class RouteLocatorConfig {
                                     .filter(authFilter.apply(config));
                         })
                         .uri("lb://USER-SERVICE"))
+
                 //CouponService
                 .route("coupon-service-route",
                         r-> r.path("/api/coupons/**", "/api/admin/coupons/**")

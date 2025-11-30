@@ -1,6 +1,8 @@
 package com.nhnacademy.book2onandongateway.filter;
 
+import com.nhnacademy.book2onandongateway.filter.AuthorizationHeaderFilter.Config;
 import com.nhnacademy.book2onandongateway.util.JwtTokenProvider;
+import com.nhnacademy.book2onandongateway.util.RedisUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -15,13 +17,15 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config> {
+public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Config> {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisUtil redisUtil;
 
-    public AuthorizationHeaderFilter(JwtTokenProvider jwtTokenProvider) {
+    public AuthorizationHeaderFilter(JwtTokenProvider jwtTokenProvider, RedisUtil redisUtil) {
         super(Config.class);
         this.jwtTokenProvider = jwtTokenProvider;
+        this.redisUtil = redisUtil;
     }
 
     @Data
@@ -53,6 +57,11 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             }
 
             String token = authHeader.substring(7);
+
+            //로그아웃 블랙리스트 확인
+            if (redisUtil.hasKeyBlackList(token)) {
+                return onError(exchange, "로그아웃된 토큰입니다. 접근이 거부됩니다.", HttpStatus.UNAUTHORIZED);
+            }
 
             // 토큰 검증
             if (!jwtTokenProvider.validateToken(token)) {
