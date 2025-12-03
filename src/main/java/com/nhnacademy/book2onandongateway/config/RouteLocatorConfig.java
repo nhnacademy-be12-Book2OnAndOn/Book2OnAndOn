@@ -30,26 +30,27 @@ public class RouteLocatorConfig {
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-SERVICE"))
                 //UserService
-                // 접근 권한(전부)
+                // [Auth] 로그인/회원가입
                 .route("user-service-auth", r -> r.path("/api/auth/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                         .uri("lb://USER-SERVICE"))
+
+                // [Public] 리뷰페이지
                 .route("user-service-public-reviews", r -> r.path("/api/users/*/reviews")
-                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")) // 필터 없이 Pass!
+                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                         .uri("lb://USER-SERVICE"))
 
-                // 권한 검사
+                // [User] 마이페이지, 내 정보 등 (로그인 필수)
                 .route("user-service-user", r -> r.path("/api/users/**", "/api/grades/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
-                                // Config를 빈 상태로 넘기면 토큰 유효성만 검사해서 로그인 여부 확인
-                                .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
+                                .filter(authFilter.apply(new AuthorizationHeaderFilter.Config()))) // 토큰 검사
                         .uri("lb://USER-SERVICE"))
 
+                // [Admin] 회원 관리 (회원 관리자만)
                 .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
-                            config.setRole("ROLE_MEMBER_ADMIN"); //회원 관리자만 통과하도록 
-
+                            config.setRole("ROLE_MEMBER_ADMIN"); // 권한 체크
                             return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                     .filter(authFilter.apply(config));
                         })
