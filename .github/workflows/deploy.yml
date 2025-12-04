@@ -1,8 +1,13 @@
-name: CI/CD for Front Service (Docker)
+name: CI/CD for Gateway Server
 
 on:
   push:
     branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:
@@ -22,11 +27,12 @@ jobs:
           chmod +x mvnw
           ./mvnw clean package -DskipTests
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
@@ -35,9 +41,9 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: onyune/gateway-server:v1  # docker-compose.yml에 적은 태그와 똑같이!
+          tags: ghcr.io/nhnacademy-be12-book2onandon/gateway-server:v1
 
-      - name: Deploy to School Server via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -48,32 +54,30 @@ jobs:
             cd /home/backend/be12-team2
             
             SERVICE_NAME="GATEWAY-SERVICE"
-            CONTAINER_1="gateway-1"
-            CONTAINER_2="gateway-2"
             EUREKA_URL="http://admin:admin1234@localhost:10437/eureka"
-
-            docker compose pull $CONTAINER_1 $CONTAINER_2
-            INSTANCE_ID="$SERVICE_NAME:$CONTAINER_1"
-            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=OUT_OF_SERVICE" || true
             
-            sleep 35
+            docker compose pull gateway-1 gateway-2
+
+            INSTANCE_ID_1="$SERVICE_NAME:gateway-1"
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_1/status?value=OUT_OF_SERVICE" || true
             
-            docker compose up -d $CONTAINER_1
-     
-            sleep 40 
+            sleep 30
             
-            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID/status?value=UP" || true
-
-
-
-
-
-            INSTANCE_ID_2="$SERVICE_NAME:$CONTAINER_2"
-            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=OUT_OF_SERVICE" || true
-            sleep 35
+            docker compose up -d gateway-1
             
-            docker compose up -d $CONTAINER_2
             sleep 40
+            
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_1/status?value=UP" || true
+
+            INSTANCE_ID_2="$SERVICE_NAME:gateway-2"
+            curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=OUT_OF_SERVICE" || true
+            
+            sleep 30
+            
+            docker compose up -d gateway-2
+            
+            sleep 40
+            
             curl -X PUT "$EUREKA_URL/apps/$SERVICE_NAME/$INSTANCE_ID_2/status?value=UP" || true
 
             docker image prune -f
