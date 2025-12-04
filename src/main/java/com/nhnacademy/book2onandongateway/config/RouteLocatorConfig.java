@@ -41,7 +41,7 @@ public class RouteLocatorConfig {
                         .uri("lb://USER-SERVICE"))
 
                 // [User] 마이페이지, 내 정보 등 (로그인 필수)
-                .route("user-service-user", r -> r.path("/api/users/**", "/api/grades/**")
+                .route("user-service-route", r -> r.path("/api/users/**", "/api/grades/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(authFilter.apply(new AuthorizationHeaderFilter.Config()))) // 토큰 검사
                         .uri("lb://USER-SERVICE"))
