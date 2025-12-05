@@ -31,23 +31,20 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
 
         // X-Guest-Id 헤더빌드
         ServerHttpRequest newRequest = request.mutate()
-                .header("X_Guest_Id", guestId)
+                .header("X-Guest-Id", guestId)
                 .build();
 
         //새 비회원이면 브라우저에도 쿠키를 생성해야함.
         if (isNewGuest){
-            String finalGuestId = guestId;
-            return chain.filter(exchange.mutate().request(newRequest).build())
-                    .then(Mono.fromRunnable(() -> {
-                        ResponseCookie responseCookie = ResponseCookie.from("GUEST_ID", finalGuestId)
-                                .maxAge(60 * 60 * 24 * 30) // 30일 유지
-                                .path("/")
-                                .httpOnly(true)
-                                .secure(true)
-                                .build();
-                        exchange.getResponse().addCookie(responseCookie);
-                    }));
+            ResponseCookie responseCookie = ResponseCookie.from("GUEST_ID", guestId)
+                    .maxAge(60 * 60 * 24 * 30) // 30일 유지
+                    .path("/")
+                    .httpOnly(true)
+                    .secure(true)
+                    .build();
+            exchange.getResponse().addCookie(responseCookie);
         }
+
         return chain.filter(exchange.mutate().request(newRequest).build());
     }
     @Override
