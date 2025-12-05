@@ -37,7 +37,7 @@ public class RouteLocatorConfig {
                 //OrderService
                 //[Cart] 회원용
                 .route("cart-service-member",
-                        r -> r.path("/api/cart/**")
+                        r -> r.path("/api/cart/user/**")
                                 .and().header("Authorization") // 헤더 확인 조건 추가
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
@@ -45,7 +45,7 @@ public class RouteLocatorConfig {
 
                 // [Cart] 비회원용 (위에서 걸러지지 않은 나머지 -> 인증 필터 미적용)
                 .route("cart-service-guest",
-                        r -> r.path("/api/cart/**")
+                        r -> r.path("/api/cart/guest/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 회원 주문
