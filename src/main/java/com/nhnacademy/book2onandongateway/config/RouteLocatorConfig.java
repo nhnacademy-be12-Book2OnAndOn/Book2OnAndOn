@@ -33,17 +33,28 @@ public class RouteLocatorConfig {
                                     return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                             .filter(authFilter.apply(config));
                                 })
-                                .uri("lb://ORDER-PAYMENT-SERVICE"))
+                                .uri("lb://BOOK-SERVICE"))
                 //OrderService
-                .route("cart-service-route",
+                //[Cart] 회원용
+                .route("cart-service-member",
+                        r -> r.path("/api/cart/**")
+                                .and().header("Authorization") // 헤더 확인 조건 추가
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
+                                .uri("lb://ORDER-PAYMENT-SERVICE"))
+
+                // [Cart] 비회원용 (위에서 걸러지지 않은 나머지 -> 인증 필터 미적용)
+                .route("cart-service-guest",
                         r -> r.path("/api/cart/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
+                // [Order] 회원 주문
                 .route("order-service-user",
                         r -> r.path("/api/orders/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
-                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config()))) // ★ 토큰 필수
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
+                // [Order] 주문 관리자
                 .route("order-service-admin", r-> r.path("/api/admin/orders/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
@@ -62,13 +73,13 @@ public class RouteLocatorConfig {
                         .uri("lb://USER-SERVICE"))
 
                 // [User] 마이페이지, 내 정보 등 (로그인 필수)
-                .route("user-service-route", r -> r.path("/api/users/**", "/api/grades/**")
+                .route("user-service-route", r -> r.path("/api/users/**", "/api/grades/**", "/api/points/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                 .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                         .uri("lb://USER-SERVICE"))
 
-                // User 서비스 관리자
-                .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**")
+                // [User] 서비스 관리자
+                .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**", "/api/admin/points/**", "/api/admin/point-policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_MEMBER_ADMIN"); // 권한 체크
@@ -78,12 +89,13 @@ public class RouteLocatorConfig {
                         .uri("lb://USER-SERVICE"))
 
                 //CouponService
-                .route("coupon-service-user",
-                        r-> r.path("/api/coupons/**")
+                // [Coupon] 쿠폰 조회
+                .route("coupon-service-route",
+                        r -> r.path("/api/coupons/**", "/api/my-coupon/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
-                //쿠폰 서비스 관리자
+                //[Coupon] 쿠폰 관리자
                 .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
