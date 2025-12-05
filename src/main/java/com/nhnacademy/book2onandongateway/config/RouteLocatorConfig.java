@@ -25,13 +25,10 @@ public class RouteLocatorConfig {
                                 .uri("lb://BOOK-SERVICE"))
                 //OrderService
                 .route("order-payment-service-route",
-                        r -> r.path("/api/orders/**", "/api/admin/orders/**")
+                        r -> r.path("/api/orders/**", "/api/admin/orders/**", "/api/cart/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
-                .route("order-payment-service-route",
-                        r -> r.path("/api/cart/**")
-                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
-                                .uri("lb://ORDER-PAYMENT-SERVICE"))
+
                 //UserService
                 // [Auth] 로그인/회원가입
                 .route("user-service-auth", r -> r.path("/api/auth/**")
@@ -61,8 +58,10 @@ public class RouteLocatorConfig {
 
                 //CouponService
                 .route("coupon-service-route",
-                        r -> r.path("/api/coupons/**", "/api/admin/coupons/**")
-                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
+                        r -> r.path("/api/coupons/**", "/api/admin/coupons/**", "/api/my-coupon/**",
+                                        "/api/admin/coupon-policies/**")
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
                 .build();
     }

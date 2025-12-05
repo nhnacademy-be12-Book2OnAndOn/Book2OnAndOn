@@ -22,7 +22,7 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
         HttpCookie cookie = request.getCookies().getFirst("GUEST_ID");
 
         boolean isNewGuest = false;
-        if (cookie != null){
+        if (cookie != null) {
             guestId = cookie.getValue();
         } else {
             guestId = UUID.randomUUID().toString();
@@ -31,25 +31,23 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
 
         // X-Guest-Id 헤더빌드
         ServerHttpRequest newRequest = request.mutate()
-                .header("X_Guest_Id", guestId)
+                .header("X-Guest-Id", guestId)
                 .build();
 
-        //새 비회원이면 브라우저에도 쿠키를 생성해야함.
-        if (isNewGuest){
-            String finalGuestId = guestId;
-            return chain.filter(exchange.mutate().request(newRequest).build())
-                    .then(Mono.fromRunnable(() -> {
-                        ResponseCookie responseCookie = ResponseCookie.from("GUEST_ID", finalGuestId)
-                                .maxAge(60 * 60 * 24 * 30) // 30일 유지
-                                .path("/")
-                                .httpOnly(true)
-                                .secure(true)
-                                .build();
-                        exchange.getResponse().addCookie(responseCookie);
-                    }));
+        if (isNewGuest) {
+            ResponseCookie responseCookie = ResponseCookie.from("GUEST_ID", guestId)
+                    .maxAge(60 * 60 * 24 * 30) // 30일 유지
+                    .path("/")
+                    .httpOnly(true)
+                    .secure(true)
+                    .build();
+            exchange.getResponse().addCookie(responseCookie);
         }
+
+        // 필터 체인 계속 진행
         return chain.filter(exchange.mutate().request(newRequest).build());
     }
+
     @Override
     public int getOrder() {
         //AuthorizationHeaderFilter보다 우선순위
