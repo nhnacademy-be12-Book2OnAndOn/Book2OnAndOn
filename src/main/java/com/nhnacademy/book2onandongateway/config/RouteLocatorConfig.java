@@ -50,12 +50,12 @@ public class RouteLocatorConfig {
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 회원 주문
                 .route("order-service-user",
-                        r -> r.path("/api/orders/**")
+                        r -> r.path("/api/orders/**", "/api/deliveries/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 주문 관리자
-                .route("order-service-admin", r-> r.path("/api/admin/orders/**")
+                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "api/admin/deliveries/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_ORDER_ADMIN");
@@ -96,7 +96,7 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
                 //[Coupon] 쿠폰 관리자
-                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**")
+                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**","/api/admin/coupon-policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_COUPON_ADMIN"); // 권한 체크
