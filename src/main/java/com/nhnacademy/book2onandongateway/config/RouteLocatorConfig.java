@@ -16,7 +16,7 @@ public class RouteLocatorConfig {
     private final AuthorizationHeaderFilter authFilter;
 
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 //BookService
                 .route("book-service-route",
@@ -24,10 +24,14 @@ public class RouteLocatorConfig {
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://BOOK-SERVICE"))
                 //OrderService
-                .route("order-service-route",
+                .route("order-payment-service-route",
                         r -> r.path("/api/orders/**", "/api/admin/orders/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
-                                .uri("lb://ORDER-SERVICE"))
+                                .uri("lb://ORDER-PAYMENT-SERVICE"))
+                .route("order-payment-service-route",
+                        r -> r.path("/api/cart/**")
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
+                                .uri("lb://ORDER-PAYMENT-SERVICE"))
                 //UserService
                 // [Auth] 로그인/회원가입
                 .route("user-service-auth", r -> r.path("/api/auth/**")
@@ -57,14 +61,14 @@ public class RouteLocatorConfig {
 
                 //CouponService
                 .route("coupon-service-route",
-                        r-> r.path("/api/coupons/**", "/api/admin/coupons/**")
+                        r -> r.path("/api/coupons/**", "/api/admin/coupons/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://COUPON-SERVICE"))
                 .build();
     }
 
     @Bean
-    public CorsWebFilter corsWebFilter(){
+    public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true); // 쿠키/인증정보 포함 허용
         config.addAllowedOriginPattern("*"); // 모든 도메인 허용 (운영 시엔 프론트 도메인 적어야됨!!!!!1)
