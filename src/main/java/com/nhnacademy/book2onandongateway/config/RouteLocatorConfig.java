@@ -16,40 +16,58 @@ public class RouteLocatorConfig {
     private final AuthorizationHeaderFilter authFilter;
 
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
         return builder.routes()
                 //BookService
                 .route("book-service-route",
-                        r -> r.path("/api/books/**", "/api/admin/books/**")
+                        r -> r.path("/api/books/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://BOOK-SERVICE"))
-                //OrderService
-                .route("order-payment-service-route",
-                        r -> r.path("/api/orders/**", "/api/admin/orders/**")
-                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
+
+                // [Book] 관리자
+                .route("book-service-admin",
+                        r -> r.path("/api/admin/books/**")
+                                .filters(f -> {
+                                    AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                                    config.setRole("ROLE_BOOK_ADMIN");
+                                    return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                            .filter(authFilter.apply(config));
+                                })
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
-                .route("order-payment-service-route",
+                //OrderService
+                .route("cart-service-route",
                         r -> r.path("/api/cart/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
-                //UserService
-                // [Auth] 로그인/회원가입
-                .route("user-service-auth", r -> r.path("/api/auth/**")
-                        .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
-                        .uri("lb://USER-SERVICE"))
+                .route("order-service-user",
+                        r -> r.path("/api/orders/**")
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config()))) // ★ 토큰 필수
+                                .uri("lb://ORDER-PAYMENT-SERVICE"))
+                .route("order-service-admin", r-> r.path("/api/admin/orders/**")
+                        .filters(f -> {
+                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                            config.setRole("ROLE_ORDER_ADMIN");
+                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                    .filter(authFilter.apply(config));
+                        })
+                        .uri("lb://ORDER-PAYMENT-SERVICE"))
 
-                // [Public] 리뷰페이지
-                .route("user-service-public-reviews", r -> r.path("/api/users/*/reviews")
+
+
+                //UserService
+                // [Auth] [Review] 인증 x
+                .route("user-service-public", r -> r.path("/api/auth/**", "/api/users/*/reviews")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                         .uri("lb://USER-SERVICE"))
 
                 // [User] 마이페이지, 내 정보 등 (로그인 필수)
                 .route("user-service-route", r -> r.path("/api/users/**", "/api/grades/**")
                         .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
-                                .filter(authFilter.apply(new AuthorizationHeaderFilter.Config()))) // 토큰 검사
+                                .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                         .uri("lb://USER-SERVICE"))
 
-                // [Admin] 회원 관리 (회원 관리자만)
+                // User 서비스 관리자
                 .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
@@ -60,15 +78,25 @@ public class RouteLocatorConfig {
                         .uri("lb://USER-SERVICE"))
 
                 //CouponService
-                .route("coupon-service-route",
-                        r -> r.path("/api/coupons/**", "/api/admin/coupons/**")
-                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
+                .route("coupon-service-user",
+                        r-> r.path("/api/coupons/**")
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
+                //쿠폰 서비스 관리자
+                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**")
+                        .filters(f -> {
+                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                            config.setRole("ROLE_COUPON_ADMIN"); // 권한 체크
+                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                    .filter(authFilter.apply(config));
+                        })
+                        .uri("lb://COUPON-SERVICE"))
                 .build();
     }
 
     @Bean
-    public CorsWebFilter corsWebFilter() {
+    public CorsWebFilter corsWebFilter(){
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true); // 쿠키/인증정보 포함 허용
         config.addAllowedOriginPattern("*"); // 모든 도메인 허용 (운영 시엔 프론트 도메인 적어야됨!!!!!1)
