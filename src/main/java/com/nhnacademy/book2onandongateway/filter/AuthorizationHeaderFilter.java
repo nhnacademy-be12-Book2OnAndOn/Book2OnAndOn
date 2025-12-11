@@ -30,7 +30,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
 
     @Data
     public static class Config {
-        private String role; //관리자 ROLE
+        private String role;
     }
 
     @Override
@@ -46,7 +46,6 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
             // Authorization 헤더 추출
             String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-            // 헤더 없거나 빈 값이면 토큰 없는 요청 -> 필터 스킵
             if (authHeader == null || authHeader.isBlank()) {
                 return chain.filter(exchange);
             }
@@ -58,7 +57,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
 
             String token = authHeader.substring(7);
 
-            //로그아웃 블랙리스트 확인
+            // 로그아웃 블랙리스트 확인
             if (redisUtil.hasKeyBlackList(token)) {
                 return onError(exchange, "로그아웃된 토큰입니다. 접근이 거부됩니다.", HttpStatus.UNAUTHORIZED);
             }
@@ -71,12 +70,22 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
             String userId = jwtTokenProvider.getUserId(token);
             String userRole = jwtTokenProvider.getRole(token);
 
-            // 권한 검사
             if (config.getRole() != null) {
-                boolean isMatched = config.getRole().equals(userRole);
-                boolean isSuperAdmin = "ROLE_SUPER_ADMIN".equals(userRole);
+                String[] allowedRoles = config.getRole().split(",");
+                boolean isAuthorized = false;
 
-                if (!isMatched && !isSuperAdmin) {
+                if ("ROLE_SUPER_ADMIN".equals(userRole)) {
+                    isAuthorized = true;
+                } else {
+                    for (String role : allowedRoles) {
+                        if (role.trim().equals(userRole)) {
+                            isAuthorized = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isAuthorized) {
                     return onError(exchange, "접근 권한이 없습니다.", HttpStatus.FORBIDDEN);
                 }
             }
@@ -90,14 +99,12 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
         };
     }
 
-
     private boolean isWhitelisted(String path) {
         return path.startsWith("/auth") ||
                 path.startsWith("/api/auth") ||
                 path.contains("/swagger-ui") ||
                 path.contains("/v3/api-docs");
     }
-
 
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();

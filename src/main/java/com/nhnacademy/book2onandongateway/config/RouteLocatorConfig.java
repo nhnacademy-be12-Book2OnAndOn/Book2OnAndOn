@@ -38,12 +38,12 @@ public class RouteLocatorConfig {
                 //[Cart] 회원용
                 .route("cart-service-member",
                         r -> r.path("/api/cart/user/**")
-                                .and().header("Authorization") // 헤더 확인 조건 추가
+                                .and().header("Authorization")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
 
-                // [Cart] 비회원용 (위에서 걸러지지 않은 나머지 -> 인증 필터 미적용)
+                // [Cart] 비회원용
                 .route("cart-service-guest",
                         r -> r.path("/api/cart/guest/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
@@ -79,6 +79,15 @@ public class RouteLocatorConfig {
                         .uri("lb://USER-SERVICE"))
 
                 // [User] 서비스 관리자
+                .route("user-service-admin-count", r -> r.path("/api/admin/users/count")
+                        .filters(f -> {
+                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                            config.setRole("ROLE_MEMBER_ADMIN, ROLE_BOOK_ADMIN, ROLE_ORDER_ADMIN, ROLE_COUPON_ADMIN");
+                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                    .filter(authFilter.apply(config));
+                        })
+                        .uri("lb://USER-SERVICE"))
+
                 .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**", "/api/admin/points/**", "/api/admin/point-policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
