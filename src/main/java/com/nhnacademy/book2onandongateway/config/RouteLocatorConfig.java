@@ -55,7 +55,7 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 주문 관리자
-                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "api/admin/deliveries/**")
+                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "/api/admin/deliveries/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_ORDER_ADMIN");
