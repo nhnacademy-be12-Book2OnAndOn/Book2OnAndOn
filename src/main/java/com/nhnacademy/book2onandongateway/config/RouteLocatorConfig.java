@@ -26,7 +26,7 @@ public class RouteLocatorConfig {
 
                 // [Book] 관리자
                 .route("book-service-admin",
-                        r -> r.path("/api/admin/books/**")
+                        r -> r.path("/api/admin/books/**", "/api/admin/search/**", "/api/admin/categories/**", "/api/admin/tags/**")
                                 .filters(f -> {
                                     AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                                     config.setRole("ROLE_BOOK_ADMIN");
@@ -55,7 +55,7 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 주문 관리자
-                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "/api/admin/deliveries/**")
+                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "/api/admin/deliveries/**", "/api/admin/delivery-policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_ORDER_ADMIN");
