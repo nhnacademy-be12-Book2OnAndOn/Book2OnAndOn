@@ -22,7 +22,7 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
         HttpCookie cookie = request.getCookies().getFirst("GUEST_ID");
 
         boolean isNewGuest = false;
-        if (cookie != null){
+        if (cookie != null) {
             guestId = cookie.getValue();
         } else {
             guestId = UUID.randomUUID().toString();
@@ -47,6 +47,7 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
 
         return chain.filter(exchange.mutate().request(newRequest).build());
     }
+
     @Override
     public int getOrder() {
         //AuthorizationHeaderFilter보다 우선순위
