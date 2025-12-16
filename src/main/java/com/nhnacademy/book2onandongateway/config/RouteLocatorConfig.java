@@ -105,7 +105,7 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
                 //[Coupon] 쿠폰 관리자
-                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**","/api/admin/coupon-policies/**")
+                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**","/api/admin/policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_COUPON_ADMIN"); // 권한 체크
