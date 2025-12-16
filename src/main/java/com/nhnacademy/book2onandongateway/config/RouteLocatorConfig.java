@@ -19,6 +19,11 @@ public class RouteLocatorConfig {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
         return builder.routes()
                 //BookService
+                .route("book-service-auth",
+                        r -> r.path("/api/books/*/likes")
+                                .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                        .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
+                                .uri("lb://BOOK-SERVICE"))
                 .route("book-service-route",
                         r -> r.path("/api/books/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
