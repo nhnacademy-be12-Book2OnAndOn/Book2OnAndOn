@@ -19,6 +19,15 @@ public class RouteLocatorConfig {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
         return builder.routes()
                 //BookService
+                .route("book-service-admin-count", r -> r.path("/api/admin/books/total-count")
+                        .filters(f -> {
+                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                            config.setRole("ROLE_MEMBER_ADMIN, ROLE_BOOK_ADMIN, ROLE_ORDER_ADMIN, ROLE_COUPON_ADMIN");
+                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                    .filter(authFilter.apply(config));
+                        })
+                        .uri("lb://BOOK-SERVICE"))
+
                 .route("book-service-route",
                         r -> r.path("/api/books/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
