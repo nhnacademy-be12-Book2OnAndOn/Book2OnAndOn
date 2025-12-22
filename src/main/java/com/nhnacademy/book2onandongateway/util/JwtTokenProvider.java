@@ -2,22 +2,30 @@ package com.nhnacademy.book2onandongateway.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import java.security.Key;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtTokenProvider {
-    private final Key secretKey;
+    private final PublicKey publicKey;
 
-    public JwtTokenProvider(@Value("${jwt.secret-key}") String secret){
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
+    public JwtTokenProvider(@Value("${jwt.public-key}") String publicKeyStr) {
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyStr);
+            this.publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+        } catch (Exception e) {
+            throw new RuntimeException("JWT Public Key initialization failed", e);
+        }
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
+            Jwts.parserBuilder().setSigningKey(publicKey).build().parseClaimsJws(token);
             return true;
         } catch (Exception e) {
             return false;
@@ -26,7 +34,7 @@ public class JwtTokenProvider {
 
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
+                .setSigningKey(publicKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
