@@ -16,7 +16,7 @@ public class RouteLocatorConfig {
     private final AuthorizationHeaderFilter authFilter;
 
     @Bean
-    public RouteLocator customRouteLocator(RouteLocatorBuilder builder){
+    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 //BookService
                 .route("book-service-auth",
@@ -25,7 +25,7 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://BOOK-SERVICE"))
                 .route("book-service-route",
-                        r -> r.path("/api/books/**")
+                        r -> r.path("/api/books/**", "/api/categories/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://BOOK-SERVICE"))
                 .route("book-service-admin-count", r -> r.path("/api/admin/books/total-count/**")
@@ -39,7 +39,8 @@ public class RouteLocatorConfig {
 
                 // [Book] 관리자
                 .route("book-service-admin",
-                        r -> r.path("/api/admin/books/**", "/api/admin/search/**", "/api/admin/categories/**", "/api/admin/tags/**")
+                        r -> r.path("/api/admin/books/**", "/api/admin/search/**", "/api/admin/categories/**",
+                                        "/api/admin/tags/**")
                                 .filters(f -> {
                                     AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                                     config.setRole("ROLE_BOOK_ADMIN");
@@ -68,7 +69,8 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 주문 관리자
-                .route("order-service-admin", r-> r.path("/api/admin/orders/**", "/api/admin/deliveries/**", "/api/admin/delivery-policies/**")
+                .route("order-service-admin", r -> r.path("/api/admin/orders/**", "/api/admin/deliveries/**",
+                                "/api/admin/delivery-policies/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_ORDER_ADMIN");
@@ -76,8 +78,6 @@ public class RouteLocatorConfig {
                                     .filter(authFilter.apply(config));
                         })
                         .uri("lb://ORDER-PAYMENT-SERVICE"))
-
-
 
                 //UserService
                 // [Auth] [Review] 인증 x
@@ -101,14 +101,16 @@ public class RouteLocatorConfig {
                         })
                         .uri("lb://USER-SERVICE"))
 
-                .route("user-service-admin", r -> r.path("/api/admin/users/**", "/api/admin/grades/**", "/api/admin/points/**", "/api/admin/point-policies/**")
-                        .filters(f -> {
-                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
-                            config.setRole("ROLE_MEMBER_ADMIN"); // 권한 체크
-                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
-                                    .filter(authFilter.apply(config));
-                        })
-                        .uri("lb://USER-SERVICE"))
+                .route("user-service-admin",
+                        r -> r.path("/api/admin/users/**", "/api/admin/grades/**", "/api/admin/points/**",
+                                        "/api/admin/point-policies/**")
+                                .filters(f -> {
+                                    AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                                    config.setRole("ROLE_MEMBER_ADMIN"); // 권한 체크
+                                    return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                            .filter(authFilter.apply(config));
+                                })
+                                .uri("lb://USER-SERVICE"))
 
                 //CouponService
                 // [Coupon] 쿠폰 조회
@@ -118,19 +120,20 @@ public class RouteLocatorConfig {
                                         .filter(authFilter.apply(new AuthorizationHeaderFilter.Config())))
                                 .uri("lb://COUPON-SERVICE"))
                 //[Coupon] 쿠폰 관리자
-                .route("coupon-service-admin", r -> r.path("/api/admin/coupons/**","/api/admin/policies/**","/api/admin/coupon-policies/**")
-                        .filters(f -> {
-                            AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
-                            config.setRole("ROLE_COUPON_ADMIN"); // 권한 체크
-                            return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
-                                    .filter(authFilter.apply(config));
-                        })
-                        .uri("lb://COUPON-SERVICE"))
+                .route("coupon-service-admin",
+                        r -> r.path("/api/admin/coupons/**", "/api/admin/policies/**", "/api/admin/coupon-policies/**")
+                                .filters(f -> {
+                                    AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                                    config.setRole("ROLE_COUPON_ADMIN"); // 권한 체크
+                                    return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                            .filter(authFilter.apply(config));
+                                })
+                                .uri("lb://COUPON-SERVICE"))
                 .build();
     }
 
     @Bean
-    public CorsWebFilter corsWebFilter(){
+    public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true); // 쿠키/인증정보 포함 허용
         config.addAllowedOriginPattern("*"); // 모든 도메인 허용 (운영 시엔 프론트 도메인 적어야됨!!!!!1)
