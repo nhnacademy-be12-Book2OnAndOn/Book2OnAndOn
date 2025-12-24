@@ -40,7 +40,7 @@ public class RouteLocatorConfig {
                 // [Book] 관리자
                 .route("book-service-admin",
                         r -> r.path("/api/admin/books/**", "/api/admin/search/**", "/api/admin/categories/**",
-                                        "/api/admin/tags/**")
+                                        "/api/admin/tags/**","/api/admin/price/**","/api/admin/reindex/**")
                                 .filters(f -> {
                                     AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                                     config.setRole("ROLE_BOOK_ADMIN");
