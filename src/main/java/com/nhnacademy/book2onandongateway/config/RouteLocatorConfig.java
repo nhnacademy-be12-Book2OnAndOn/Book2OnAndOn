@@ -59,7 +59,7 @@ public class RouteLocatorConfig {
 
                 // [Cart] 비회원용
                 .route("cart-service-guest",
-                        r -> r.path("/api/cart/guest/**")
+                        r -> r.path("/api/cart/guest/**","/api/payment/**", "/api/guest/orders/**", "/api/wrappapers/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 회원 주문
@@ -70,7 +70,7 @@ public class RouteLocatorConfig {
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 주문 관리자
                 .route("order-service-admin", r -> r.path("/api/admin/orders/**", "/api/admin/deliveries/**",
-                                "/api/admin/delivery-policies/**")
+                                "/api/admin/delivery-policies/**","/api/admin/refunds/**", "/api/admin/wrappapers/**")
                         .filters(f -> {
                             AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
                             config.setRole("ROLE_ORDER_ADMIN");
