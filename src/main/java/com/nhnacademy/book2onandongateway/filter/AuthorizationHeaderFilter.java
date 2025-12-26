@@ -31,6 +31,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Conf
     @Data
     public static class Config {
         private String role;
+        private Boolean optional;
     }
 
     @Override

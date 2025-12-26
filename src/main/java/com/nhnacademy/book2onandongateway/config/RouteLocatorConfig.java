@@ -114,6 +114,15 @@ public class RouteLocatorConfig {
 
                 //CouponService
                 // [Coupon] 쿠폰 조회
+                .route("coupon-service-issuable",
+                        r -> r.path("/api/coupons/issuable")
+                                .filters(f -> {
+                                    AuthorizationHeaderFilter.Config config = new AuthorizationHeaderFilter.Config();
+                                    config.setOptional(true); // [핵심] 토큰 없어도 통과 허용
+                                    return f.rewritePath("/api/(?<segment>.*)", "/${segment}")
+                                            .filter(authFilter.apply(config));
+                                })
+                                .uri("lb://COUPON-SERVICE"))
                 .route("coupon-service-route",
                         r -> r.path("/api/coupons/**", "/api/my-coupon/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}")
