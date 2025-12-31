@@ -59,7 +59,7 @@ public class RouteLocatorConfig {
 
                 // [Cart] 비회원용
                 .route("cart-service-guest",
-                        r -> r.path("/api/cart/guest/**","/api/payment/**", "/api/guest/orders/**", "/api/wrappapers/**")
+                        r -> r.path("/api/cart/guest/**","/api/payment/**", "/api/guest/orders/**", "/api/wrappapers/**", "/api/delivery-policies/**")
                                 .filters(f -> f.rewritePath("/api/(?<segment>.*)", "/${segment}"))
                                 .uri("lb://ORDER-PAYMENT-SERVICE"))
                 // [Order] 회원 주문
