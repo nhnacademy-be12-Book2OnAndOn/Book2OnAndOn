@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -18,13 +17,11 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String guestId = null;
-        HttpCookie cookie = request.getCookies().getFirst("GUEST_ID");
+        String guestId = request.getHeaders().getFirst("X-Guest-Id");
 
+        log.info("http : {}\nguestId : {}", request.getPath(), guestId);
         boolean isNewGuest = false;
-        if (cookie != null) {
-            guestId = cookie.getValue();
-        } else {
+        if (guestId == null) {
             guestId = UUID.randomUUID().toString();
             isNewGuest = true;
         }
@@ -35,12 +32,12 @@ public class GlobalGuestFilter implements GlobalFilter, Ordered {
                 .build();
 
         //새 비회원이면 브라우저에도 쿠키를 생성해야함.
-        if (isNewGuest){
+        if (isNewGuest) {
             ResponseCookie responseCookie = ResponseCookie.from("GUEST_ID", guestId)
                     .maxAge(60 * 60 * 24 * 30) // 30일 유지
                     .path("/")
                     .httpOnly(true)
-                    .secure(true)
+                    .secure(false)
                     .build();
             exchange.getResponse().addCookie(responseCookie);
         }
